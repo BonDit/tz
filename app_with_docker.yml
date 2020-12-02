@@ -1,0 +1,54 @@
+---
+- hosts: node
+  become: yes
+  become_method: sudo
+  tasks:
+    - name: Updates apt cache
+      apt: update_cache=true
+
+    - name: Install required system packages
+      apt: name={{ item }} state=latest
+      loop: [ 'apt-transport-https', 'ca-certificates', 'curl', 'software-properties-common', 'python3-pip', 'virtualenv', 'python3-setuptools']
+      
+    - name: Add Docker GPG apt Key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+      
+    - name: Add Docker Repository
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu bionic stable
+        state: present
+
+    - name: Installs docker-ce docker-ce-cli containerd.io
+      apt: name={{ item }} state=latest
+      loop: [ 'docker-ce', 'docker-ce-cli', 'containerd.io']
+
+    - name: Install Docker Module for Python
+      pip:
+        name: docker
+
+    - name: Clone application
+      git:
+        repo: https://github.com/anfederico/flaskex.git
+        dest: /home/vagrant/Flaskex
+
+    - name: Download Dockerfile in my repo
+      get_url:
+        url: https://raw.githubusercontent.com/BonDit/tz/main/Dockerfile
+        dest: /home/vagrant/Flaskex/
+
+    - name: Build image simbirsoft 
+      docker_image:
+        name: simbirsoft:latest
+        build:
+          pull: yes
+          path: /home/vagrant/Flaskex
+        source: build
+
+    - name: Run Flaskex in a docker container
+      docker_container:
+        name: Flaskex
+        image: "simbirsoft:latest"
+        state: started
+        ports: 5000:5000

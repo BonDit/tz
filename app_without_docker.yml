@@ -1,0 +1,25 @@
+- hosts: node
+  become: yes
+  become_method: sudo
+  tasks:
+
+    - name: Updates apt cache
+      apt: update_cache=true
+
+    - name: Clone application
+      git:
+        repo: https://github.com/anfederico/flaskex.git
+        dest: /home/vagrant/Flaskex
+
+    - name: Installs python3-pip
+      apt: pkg=python3-pip state=latest update_cache=true
+
+    - name: install requirements.txt
+      shell: pip3 install -r requirements.txt
+      args:
+        chdir: /home/vagrant/Flaskex/
+
+    - name: Run app
+      shell: python3 app.py
+      args:
+        chdir: /home/vagrant/Flaskex/
